@@ -14,13 +14,11 @@
 #define IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
 
 // TODOs:
-// - bazel
 // - cmake executable names
 // - example name
-// - readme
+// - readme; two messages? + TODO
 // - copyright year
 // - custom user header in same example?
-// - both, cxx pub/sub and rust sub/pub?
 #include <cstdint>
 #include <iostream>
 
