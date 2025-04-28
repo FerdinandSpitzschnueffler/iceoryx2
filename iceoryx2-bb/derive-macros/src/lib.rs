@@ -20,7 +20,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, LitStr};
+use syn::{parse_macro_input, Data, DeriveInput, Expr, Fields, LitStr};
 
 /// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.
@@ -136,10 +136,35 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     let attributes: &Vec<_> = &ast
         .attrs
         .iter()
-        .filter(|a| a.path().segments.len() == 1 && a.path().segments[0].ident == "type_name")
+        .filter(|a| a.path().is_ident("type_name"))
         .collect();
     if attributes.len() > 1 {
         panic!("Too many attributes provided for ZeroCopySend trait.");
+    }
+
+    // TODO: require 'static lifetime?
+    let has_repr_c = &ast.attrs.iter().any(|a| {
+        if a.path().is_ident("repr") {
+            let x = a.parse_args::<syn::Meta>();
+            if x.is_err() {
+                return false;
+            }
+            if x.unwrap().path().is_ident("C") {
+                return true;
+            }
+            false
+        } else {
+            false
+        }
+    });
+
+    if !has_repr_c {
+        return syn::Error::new_spanned(
+            ast.ident,
+            "`#[derive(MyMacro)]` requires the struct to be annotated with #[repr(C)]",
+        )
+        .to_compile_error()
+        .into();
     }
 
     let type_name_impl = match attributes.len() {
